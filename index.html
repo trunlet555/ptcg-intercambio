@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intercambio de Cartas Pokémon — MVP v0.1</title>
+  <meta name="description" content="MVP para gestionar listas de cartas BUSCO/TENGO y simular matches para intercambio en físico." />
+  <style>
+    :root {
+      --bg: #0f172a;        /* slate-900 */
+      --panel: #111827;     /* gray-900 */
+      --muted: #94a3b8;     /* slate-400 */
+      --text: #e5e7eb;      /* gray-200 */
+      --brand: #22c55e;     /* green-500 */
+      --danger: #ef4444;    /* red-500 */
+      --accent: #38bdf8;    /* sky-400 */
+      --card: #1f2937;      /* gray-800 */
+      --input: #0b1220;     /* custom */
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 0% 0%, #0b1220, var(--bg));
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    header {
+      position: sticky; top: 0; z-index: 10;
+      backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.7);
+      border-bottom: 1px solid #1f2937;
+    }
+    .wrap { max-width: 1024px; margin: 0 auto; padding: 1rem; }
+    .title {
+      display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+    }
+    .badge { padding: .25rem .55rem; border-radius: 999px; font-size: .75rem; background: #16a34a22; border: 1px solid #16a34a55; color: #86efac; }
+
+    main { padding: 1rem; }
+    .grid {
+      display: grid; gap: 1rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .span-2 { grid-column: span 2; }
+    }
+
+    .card {
+      background: linear-gradient(180deg, #101827, #0b1220);
+      border: 1px solid #1f2937; border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    .card h2 { margin: 0 0 .75rem; font-size: 1.1rem; }
+    .card .head { padding: 1rem 1rem 0 1rem; }
+    .card .body { padding: 1rem; }
+
+    label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .25rem; }
+    input, select, button, textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #293548;
+      background: var(--input);
+      color: var(--text);
+      padding: .75rem .9rem;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #38bdf833; }
+    textarea { min-height: 120px; resize: vertical; }
+
+    .row { display: grid; gap: .75rem; grid-template-columns: 1fr; }
+    @media (min-width: 600px) { .row.cols-2 { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 900px) { .row.cols-3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+    .btn {
+      cursor: pointer; border: 1px solid transparent; font-weight: 600; letter-spacing: .2px;
+      transition: transform .05s ease, filter .2s ease, background .2s ease, border .2s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: linear-gradient(180deg, #22c55e, #16a34a); color: #06210f; }
+    .btn.ghost { background: transparent; border-color: #334155; color: var(--text); }
+    .btn.danger { background: linear-gradient(180deg, #ef4444, #b91c1c); color: #fff; }
+
+    .list {
+      display: grid; gap: .5rem;
+      max-height: 420px; overflow: auto; padding-right: .25rem;
+    }
+    .item { display: grid; gap: .5rem; grid-template-columns: 1fr auto; align-items: center;
+      padding: .6rem .7rem; border: 1px dashed #334155; border-radius: 12px; background: #0b1220aa;
+    }
+    .item .meta { font-size: .9rem; }
+    .item small { color: var(--muted); }
+
+    .pill { display: inline-block; padding: .15rem .5rem; border-radius: 999px; background: #0ea5e922; border: 1px solid #0ea5e955; color: #93c5fd; font-size: .75rem; }
+
+    .empty { color: var(--muted); text-align: center; padding: 1rem; border: 1px dashed #334155; border-radius: 12px; }
+
+    footer { opacity: .9; color: var(--muted); font-size: .9rem; text-align: center; padding: 1rem 0 2rem; }
+    a { color: #93c5fd; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap title">
+      <h1 style="margin:0;font-size:1.35rem">Intercambio de Cartas Pokémon</h1>
+      <span class="badge">MVP v0.1 · Offline</span>
+      <span class="badge" title="Diseño adaptable a móvil/desktop">Responsivo</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="grid">
+      <!-- Perfil / Preferencias -->
+      <article class="card">
+        <div class="head"><h2>Tu perfil (local)</h2></div>
+        <div class="body">
+          <div class="row cols-2">
+            <div>
+              <label for="name">Nombre público</label>
+              <input id="name" placeholder="Ej.: MartaTCG" />
+            </div>
+            <div>
+              <label for="city">Ciudad (para quedadas)</label>
+              <input id="city" placeholder="Ej.: Barcelona / Girona" />
+            </div>
+          </div>
+          <div class="row cols-2" style="margin-top:.75rem">
+            <div>
+              <label for="lang">Idioma de cartas preferido</label>
+              <select id="lang">
+                <option value="ES">Español</option>
+                <option value="EN">Inglés</option>
+                <option value="DE">Alemán</option>
+                <option value="FR">Francés</option>
+                <option value="JP">Japonés</option>
+              </select>
+            </div>
+            <div>
+              <label for="contact">Contacto (opcional; se mostrará en matches locales)</label>
+              <input id="contact" placeholder="Ej.: @usuario, email..." />
+            </div>
+          </div>
+          <div style="margin-top:.75rem; display:flex; gap:.5rem; flex-wrap: wrap;">
+            <button class="btn primary" id="saveProfile">Guardar perfil</button>
+            <button class="btn ghost" id="clearProfile">Vaciar</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Añadir carta TENGO -->
+      <article class="card">
+        <div class="head"><h2>Añadir carta a <span class="pill">TENGO</span></h2></div>
+        <div class="body">
+          <div class="row cols-3">
+            <div>
+              <label for="haveSet">Colección / Set</label>
+              <input id="haveSet" placeholder="Ej.: 151, Obsidian Flames, SVI..." />
+            </div>
+            <div>
+              <label for="haveCode">Código / Nº</label>
+              <input id="haveCode" placeholder="Ej.: 123/198 o SVI 123" />
+            </div>
+            <div>
+              <label for="haveName">Nombre (opcional)</label>
+              <input id="haveName" placeholder="Ej.: Charizard ex" />
+            </div>
+          </div>
+          <div class="row cols-3" style="margin-top:.75rem">
+            <div>
+              <label for="haveQty">Cantidad</label>
+              <input id="haveQty" type="number" min="1" value="1" />
+            </div>
+            <div>
+              <label for="haveCond">Estado</label>
+              <select id="haveCond">
+                <option>Near Mint</option>
+                <option>Slightly Played</option>
+                <option>Moderately Played</option>
+                <option>Damaged</option>
+              </select>
+            </div>
+            <div style="align-self:end">
+              <button class="btn primary" id="addHave">Añadir a TENGO</button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Lista TENGO -->
+      <article class="card">
+        <div class="head"><h2>Mi lista <span class="pill">TENGO</span></h2></div>
+        <div class="body">
+          <div class="row cols-2" style="margin-bottom:.5rem">
+            <input id="searchHave" placeholder="Filtrar por set, nº o nombre..." />
+            <button class="btn ghost" id="clearHave">Vaciar TENGO</button>
+          </div>
+          <div id="listHave" class="list" role="list"></div>
+          <div id="emptyHave" class="empty" hidden>Sin cartas todavía.</div>
+        </div>
+      </article>
+
+      <!-- Añadir carta BUSCO -->
+      <article class="card">
+        <div class="head"><h2>Añadir carta a <span class="pill">BUSCO</span></h2></div>
+        <div class="body">
+          <div class="row cols-3">
+            <div>
+              <label for="wantSet">Colección / Set</label>
+              <input id="wantSet" placeholder="Ej.: 151, Obsidian Flames, SVI..." />
+            </div>
+            <div>
+              <label for="wantCode">Código / Nº</label>
+              <input id="wantCode" placeholder="Ej.: 201/197, SVI 201..." />
+            </div>
+            <div>
+              <label for="wantName">Nombre (opcional)</label>
+              <input id="wantName" placeholder="Ej.: Pikachu (Illustration Rare)" />
+            </div>
+          </div>
+          <div class="row cols-3" style="margin-top:.75rem">
+            <div>
+              <label for="wantQty">Cantidad</label>
+              <input id="wantQty" type="number" min="1" value="1" />
+            </div>
+            <div>
+              <label for="wantLang">Idioma aceptado</label>
+              <select id="wantLang">
+                <option value="ANY">Cualquiera</option>
+                <option value="ES">ES</option>
+                <option value="EN">EN</option>
+                <option value="DE">DE</option>
+                <option value="FR">FR</option>
+                <option value="JP">JP</option>
+              </select>
+            </div>
+            <div style="align-self:end">
+              <button class="btn primary" id="addWant">Añadir a BUSCO</button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Lista BUSCO -->
+      <article class="card">
+        <div class="head"><h2>Mi lista <span class="pill">BUSCO</span></h2></div>
+        <div class="body">
+          <div class="row cols-2" style="margin-bottom:.5rem">
+            <input id="searchWant" placeholder="Filtrar por set, nº o nombre..." />
+            <button class="btn ghost" id="clearWant">Vaciar BUSCO</button>
+          </div>
+          <div id="listWant" class="list" role="list"></div>
+          <div id="emptyWant" class="empty" hidden>Sin cartas todavía.</div>
+        </div>
+      </article>
+
+      <!-- Exportar/Importar + Simulador de Match -->
+      <article class="card span-2">
+        <div class="head"><h2>Compartir tus listas (JSON) y probar matches</h2></div>
+        <div class="body">
+          <div class="row cols-2">
+            <div>
+              <label>Exporta tu perfil y listas</label>
+              <div style="display:flex; gap:.5rem; flex-wrap: wrap;">
+                <button class="btn primary" id="exportAll">Descargar JSON</button>
+                <input type="file" id="importFile" accept="application/json" style="display:none" />
+                <button class="btn ghost" id="importBtn">Importar JSON</button>
+              </div>
+              <small class="muted">El JSON contiene: perfil, TENGO y BUSCO. Compártelo con otro usuario para probar el simulador de matches o para importar en otro dispositivo.</small>
+            </div>
+            <div>
+              <label for="otherJson">Pega aquí el JSON de otra persona</label>
+              <textarea id="otherJson" placeholder='{"profile":{...},"have":[...],"want":[...]}'></textarea>
+              <div style="display:flex; gap:.5rem; flex-wrap: wrap; margin-top:.5rem;">
+                <button class="btn primary" id="runMatch">Calcular matches</button>
+                <button class="btn ghost" id="clearOther">Limpiar</button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:1rem">
+            <h3 style="margin:.25rem 0 .5rem">Resultados</h3>
+            <div id="matchResults" class="list"></div>
+            <div id="emptyMatch" class="empty">Sin resultados todavía. Exporta tu JSON y pega el de otra persona, o viceversa.</div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      <p>✅ Todo se guarda en tu navegador (localStorage). No hay servidor ni registros todavía.</p>
+      <p>Próximos pasos: autenticación y base de datos para publicar tus listas y buscar a gente cerca; mapas; chat básico; propuestas de intercambio.</p>
+    </footer>
+  </main>
+
+  <script>
+    // --- Utilidades ---
+    const $ = (sel) => document.querySelector(sel);
+
+    // uuid() compatible con navegadores que no soportan crypto.randomUUID
+    function uuid() {
+      if (self.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+      // Fallback v4
+      const bytes = (self.crypto && crypto.getRandomValues) ? crypto.getRandomValues(new Uint8Array(16)) : Array.from({length:16},()=>Math.floor(Math.random()*256));
+      bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+      bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant
+      const hex = [...bytes].map(b => b.toString(16).padStart(2,'0'));
+      return `${hex[0]}${hex[1]}${hex[2]}${hex[3]}-${hex[4]}${hex[5]}-${hex[6]}${hex[7]}-${hex[8]}${hex[9]}-${hex[10]}${hex[11]}${hex[12]}${hex[13]}${hex[14]}${hex[15]}`;
+    }
+
+    const els = {
+      name: $('#name'), city: $('#city'), lang: $('#lang'), contact: $('#contact'),
+      saveProfile: $('#saveProfile'), clearProfile: $('#clearProfile'),
+      haveSet: $('#haveSet'), haveCode: $('#haveCode'), haveName: $('#haveName'), haveQty: $('#haveQty'), haveCond: $('#haveCond'), addHave: $('#addHave'),
+      wantSet: $('#wantSet'), wantCode: $('#wantCode'), wantName: $('#wantName'), wantQty: $('#wantQty'), wantLang: $('#wantLang'), addWant: $('#addWant'),
+      listHave: $('#listHave'), listWant: $('#listWant'), emptyHave: $('#emptyHave'), emptyWant: $('#emptyWant'),
+      searchHave: $('#searchHave'), searchWant: $('#searchWant'), clearHave: $('#clearHave'), clearWant: $('#clearWant'),
+      exportAll: $('#exportAll'), importBtn: $('#importBtn'), importFile: $('#importFile'),
+      otherJson: $('#otherJson'), runMatch: $('#runMatch'), clearOther: $('#clearOther'),
+      matchResults: $('#matchResults'), emptyMatch: $('#emptyMatch'),
+    };
+
+    const KEY = {
+      profile: 'ptcgProfile',
+      have: 'ptcgHave',
+      want: 'ptcgWant',
+    };
+
+    const read = (k, fallback) => {
+      try { return JSON.parse(localStorage.getItem(k)) ?? fallback; }
+      catch { return fallback; }
+    };
+    const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+    // --- Estado ---
+    let profile = read(KEY.profile, { name: '', city: '', lang: 'ES', contact: '' });
+    let have = read(KEY.have, []);
+    let want = read(KEY.want, []);
+
+    // --- Render ---
+    function renderProfile() {
+      els.name.value = profile.name || '';
+      els.city.value = profile.city || '';
+      els.lang.value = profile.lang || 'ES';
+      els.contact.value = profile.contact || '';
+    }
+
+    function itemKey(x) {
+      return `${(x.set||'').trim().toLowerCase()}::${(x.code||'').trim().toLowerCase()}::${(x.name||'').trim().toLowerCase()}`;
+    }
+
+    function renderList(listEl, emptyEl, arr, filterStr, type) {
+      listEl.innerHTML = '';
+      const q = (filterStr || '').trim().toLowerCase();
+      const filtered = arr.filter(x => q === '' || [x.set, x.code, x.name].some(v => (v||'').toLowerCase().includes(q)));
+      if (filtered.length === 0) { emptyEl.hidden = false; return; }
+      emptyEl.hidden = true;
+      for (const x of filtered) {
+        const div = document.createElement('div'); div.className = 'item';
+        const left = document.createElement('div');
+        left.className = 'meta';
+        left.innerHTML = `
+          <strong>${escapeHtml(x.name || '—')}</strong><br>
+          <small>${escapeHtml(x.set || 'Set ?')} · <span class="pill">${escapeHtml(x.code || 'Nº ?')}</span> · ${x.qty||1}u · ${escapeHtml(x.extra||'')}</small>
+        `;
+        const right = document.createElement('div');
+        const del = document.createElement('button'); del.className = 'btn danger'; del.textContent = 'Eliminar';
+        del.onclick = () => {
+          const idx = arr.findIndex(y => y._id === x._id);
+          if (idx >= 0) { arr.splice(idx, 1); persist(type); rerender(); }
+        };
+        right.appendChild(del);
+        div.appendChild(left); div.appendChild(right);
+        listEl.appendChild(div);
+      }
+    }
+
+    function rerender() {
+      renderProfile();
+      renderList(els.listHave, els.emptyHave, have, els.searchHave.value, 'have');
+      renderList(els.listWant, els.emptyWant, want, els.searchWant.value, 'want');
+    }
+
+    function persist(type) {
+      if (type === 'have') write(KEY.have, have);
+      if (type === 'want') write(KEY.want, want);
+      if (type === 'profile') write(KEY.profile, profile);
+    }
+
+    // --- Eventos Perfil ---
+    els.saveProfile.onclick = () => {
+      profile = {
+        name: els.name.value.trim(),
+        city: els.city.value.trim(),
+        lang: els.lang.value,
+        contact: els.contact.value.trim(),
+      };
+      persist('profile');
+      toast('Perfil guardado.');
+    };
+    els.clearProfile.onclick = () => {
+      profile = { name: '', city: '', lang: 'ES', contact: '' };
+      persist('profile'); rerender();
+    };
+
+    // --- Añadir TENGO ---
+    els.addHave.onclick = () => {
+      const set = els.haveSet.value.trim();
+      const code = els.haveCode.value.trim();
+      const name = els.haveName.value.trim();
+      const qty = Math.max(1, Number(els.haveQty.value||1));
+      const cond = els.haveCond.value;
+      if (!set || !code) { return toast('Indica al menos set y código para TENGO'); }
+      const obj = { set, code, name, qty, extra: cond, _id: uuid(), _k: itemKey({set, code, name}) };
+      // evitar duplicados por set+code+name => sumar qty
+      const dup = have.find(x => x._k === obj._k && x.extra === obj.extra);
+      if (dup) { dup.qty += qty; } else { have.unshift(obj); }
+      persist('have');
+      els.haveCode.value = ''; els.haveName.value=''; els.haveQty.value = '1';
+      rerender();
+    };
+
+    // --- Añadir BUSCO ---
+    els.addWant.onclick = () => {
+      const set = els.wantSet.value.trim();
+      const code = els.wantCode.value.trim();
+      const name = els.wantName.value.trim();
+      const qty = Math.max(1, Number(els.wantQty.value||1));
+      const lang = els.wantLang.value;
+      if (!set || !code) { return toast('Indica al menos set y código para BUSCO'); }
+      const obj = { set, code, name, qty, extra: `Idioma: ${lang}`, _id: uuid(), _k: itemKey({set, code, name}) };
+      const dup = want.find(x => x._k === obj._k && x.extra === obj.extra);
+      if (dup) { dup.qty += qty; } else { want.unshift(obj); }
+      persist('want');
+      els.wantCode.value = ''; els.wantName.value=''; els.wantQty.value = '1';
+      rerender();
+    };
+
+    // --- Búsqueda y vaciado ---
+    els.searchHave.addEventListener('input', () => rerender());
+    els.searchWant.addEventListener('input', () => rerender());
+    els.clearHave.onclick = () => { if (confirm('¿Vaciar lista TENGO?')) { have = []; persist('have'); rerender(); }};
+    els.clearWant.onclick = () => { if (confirm('¿Vaciar lista BUSCO?')) { want = []; persist('want'); rerender(); }};
+
+    // --- Exportar/Importar ---
+    els.exportAll.onclick = () => {
+      const data = { profile, have, want, exportAt: new Date().toISOString(), app: 'ptcg-mvp-0.1' };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'ptcg-listas.json'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    };
+
+    els.importBtn.onclick = () => els.importFile.click();
+    els.importFile.onchange = async (e) => {
+      const file = e.target.files?.[0]; if (!file) return;
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        if (!json) throw new Error('Archivo inválido');
+        if (json.profile) profile = json.profile;
+        if (Array.isArray(json.have)) have = json.have;
+        if (Array.isArray(json.want)) want = json.want;
+        persist('profile'); persist('have'); persist('want');
+        rerender(); toast('Importación completada.');
+      } catch (err) {
+        console.error(err); toast('No se pudo importar el archivo.');
+      } finally {
+        e.target.value = '';
+      }
+    };
+
+    // --- Simulador de matches ---
+    els.runMatch.onclick = () => {
+      let other; try { other = JSON.parse(els.otherJson.value || '{}'); } catch { other = null; }
+      if (!other) return toast('JSON de otra persona inválido.');
+      const res = computeMatches({ have, want }, other);
+      renderMatches(res);
+    };
+    els.clearOther.onclick = () => { els.otherJson.value=''; els.matchResults.innerHTML=''; els.emptyMatch.hidden=false; };
+
+    function computeMatches(me, other) {
+      // Coincidencias: lo que YO tengo ∩ lo que ELLOS buscan ; y lo que YO busco ∩ lo que ELLOS tienen
+      const meHaveMap = indexByKey(me.have);
+      const meWantMap = indexByKey(me.want);
+      const otherHaveMap = indexByKey(other.have || []);
+      const otherWantMap = indexByKey(other.want || []);
+
+      const iGive = [];
+      for (const k of Object.keys(meHaveMap)) {
+        if (otherWantMap[k]) {
+          const mine = meHaveMap[k];
+          const theirs = otherWantMap[k];
+          const qty = Math.min(mine.qty || 1, theirs.qty || 1);
+          if (qty > 0) iGive.push({ ...mine, qty });
+        }
+      }
+      const iReceive = [];
+      for (const k of Object.keys(meWantMap)) {
+        if (otherHaveMap[k]) {
+          const mine = meWantMap[k];
+          const theirs = otherHaveMap[k];
+          const qty = Math.min(mine.qty || 1, theirs.qty || 1);
+          if (qty > 0) iReceive.push({ ...mine, qty });
+        }
+      }
+      return { iGive, iReceive, otherProfile: other.profile || null };
+    }
+
+    function renderMatches(res) {
+      els.matchResults.innerHTML = '';
+      const { iGive, iReceive, otherProfile } = res;
+      const has = (iGive.length + iReceive.length) > 0;
+      els.emptyMatch.hidden = has;
+      if (!has) return;
+
+      const block = document.createElement('div'); block.className = 'item'; block.style.borderStyle='solid';
+      const left = document.createElement('div'); left.className = 'meta';
+      const p = document.createElement('div');
+      p.innerHTML = `
+        <strong>Match con ${escapeHtml(otherProfile?.name || 'otro usuario')}</strong><br>
+        <small>${escapeHtml(otherProfile?.city || 'Ciudad desconocida')} · Contacto: ${escapeHtml(otherProfile?.contact || '—')}</small>
+      `;
+      left.appendChild(p);
+
+      const details = document.createElement('div'); details.style.marginTop = '.5rem';
+      const partA = document.createElement('div');
+      partA.innerHTML = `<strong>Yo te doy (${iGive.length})</strong>`;
+      const ulA = document.createElement('ul'); ulA.style.margin = '.25rem 0 .75rem';
+      iGive.forEach(x => {
+        const li = document.createElement('li'); li.textContent = `${x.name || '—'} [${x.set} ${x.code}] ×${x.qty}`; ulA.appendChild(li);
+      });
+      partA.appendChild(ulA);
+
+      const partB = document.createElement('div');
+      partB.innerHTML = `<strong>Tú me das (${iReceive.length})</strong>`;
+      const ulB = document.createElement('ul'); ulB.style.margin = '.25rem 0 .75rem';
+      iReceive.forEach(x => {
+        const li = document.createElement('li'); li.textContent = `${x.name || '—'} [${x.set} ${x.code}] ×${x.qty}`; ulB.appendChild(li);
+      });
+      partB.appendChild(ulB);
+
+      details.appendChild(partA); details.appendChild(partB);
+      left.appendChild(details);
+
+      block.appendChild(left);
+      els.matchResults.appendChild(block);
+    }
+
+    function indexByKey(arr) {
+      const m = {};
+      for (const x of arr) { m[x._k] = x; }
+      return m;
+    }
+
+    function escapeHtml(str) {
+      return (str ?? '').toString().replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s]));
+    }
+
+    function toast(msg) {
+      const t = document.createElement('div');
+      t.textContent = msg;
+      Object.assign(t.style, { position:'fixed', bottom:'16px', left:'50%', transform:'translateX(-50%)', background:'#0ea5e9', color:'#06210f', padding:'10px 14px', borderRadius:'999px', fontWeight:'700', zIndex:9999, boxShadow:'0 8px 24px rgba(0,0,0,.35)' });
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 1800);
+    }
+
+    // --- Init ---
+    (function init() {
+      try {
+        // Si no hay datos, pre-llenar con un ejemplo mínimo para que el usuario vea el flujo
+        if (!have.length && !want.length && !profile.name && !profile.city) {
+          profile = { name: 'DemoUser', city: 'L\'Estartit', lang: 'ES', contact: '@demo' };
+          have = [ { set:'SVI', code:'123/198', name:'Charizard ex', qty:1, extra:'Near Mint', _id:uuid(), _k:itemKey({set:'SVI', code:'123/198', name:'Charizard ex'}) } ];
+          want = [ { set:'151', code:'201/197', name:'Mew ex (SAR)', qty:1, extra:'Idioma: ANY', _id:uuid(), _k:itemKey({set:'151', code:'201/197', name:'Mew ex (SAR)'}) } ];
+          persist('profile'); persist('have'); persist('want');
+        }
+        rerender();
+      } catch (e) {
+        console.error(e);
+        toast('Error al iniciar. Prueba a recargar sin modo incógnito.');
+      }
+    })();
+  </script>
+</body>
+</html>
