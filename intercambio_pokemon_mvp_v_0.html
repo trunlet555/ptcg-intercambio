@@ -300,6 +300,18 @@
   <script>
     // --- Utilidades ---
     const $ = (sel) => document.querySelector(sel);
+
+    // uuid() compatible con navegadores que no soportan crypto.randomUUID
+    function uuid() {
+      if (self.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+      // Fallback v4
+      const bytes = (self.crypto && crypto.getRandomValues) ? crypto.getRandomValues(new Uint8Array(16)) : Array.from({length:16},()=>Math.floor(Math.random()*256));
+      bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+      bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant
+      const hex = [...bytes].map(b => b.toString(16).padStart(2,'0'));
+      return `${hex[0]}${hex[1]}${hex[2]}${hex[3]}-${hex[4]}${hex[5]}-${hex[6]}${hex[7]}-${hex[8]}${hex[9]}-${hex[10]}${hex[11]}${hex[12]}${hex[13]}${hex[14]}${hex[15]}`;
+    }
+
     const els = {
       name: $('#name'), city: $('#city'), lang: $('#lang'), contact: $('#contact'),
       saveProfile: $('#saveProfile'), clearProfile: $('#clearProfile'),
@@ -403,7 +415,7 @@
       const qty = Math.max(1, Number(els.haveQty.value||1));
       const cond = els.haveCond.value;
       if (!set || !code) { return toast('Indica al menos set y código para TENGO'); }
-      const obj = { set, code, name, qty, extra: cond, _id: crypto.randomUUID(), _k: itemKey({set, code, name}) };
+      const obj = { set, code, name, qty, extra: cond, _id: uuid(), _k: itemKey({set, code, name}) };
       // evitar duplicados por set+code+name => sumar qty
       const dup = have.find(x => x._k === obj._k && x.extra === obj.extra);
       if (dup) { dup.qty += qty; } else { have.unshift(obj); }
@@ -420,7 +432,7 @@
       const qty = Math.max(1, Number(els.wantQty.value||1));
       const lang = els.wantLang.value;
       if (!set || !code) { return toast('Indica al menos set y código para BUSCO'); }
-      const obj = { set, code, name, qty, extra: `Idioma: ${lang}`, _id: crypto.randomUUID(), _k: itemKey({set, code, name}) };
+      const obj = { set, code, name, qty, extra: `Idioma: ${lang}`, _id: uuid(), _k: itemKey({set, code, name}) };
       const dup = want.find(x => x._k === obj._k && x.extra === obj.extra);
       if (dup) { dup.qty += qty; } else { want.unshift(obj); }
       persist('want');
@@ -560,14 +572,19 @@
 
     // --- Init ---
     (function init() {
-      // Si no hay datos, pre-llenar con un ejemplo mínimo para que el usuario vea el flujo
-      if (!have.length && !want.length && !profile.name && !profile.city) {
-        profile = { name: 'DemoUser', city: 'L'Estartit', lang: 'ES', contact: '@demo' };
-        have = [ { set:'SVI', code:'123/198', name:'Charizard ex', qty:1, extra:'Near Mint', _id:crypto.randomUUID(), _k:itemKey({set:'SVI', code:'123/198', name:'Charizard ex'}) } ];
-        want = [ { set:'151', code:'201/197', name:'Mew ex (SAR)', qty:1, extra:'Idioma: ANY', _id:crypto.randomUUID(), _k:itemKey({set:'151', code:'201/197', name:'Mew ex (SAR)'}) } ];
-        persist('profile'); persist('have'); persist('want');
+      try {
+        // Si no hay datos, pre-llenar con un ejemplo mínimo para que el usuario vea el flujo
+        if (!have.length && !want.length && !profile.name && !profile.city) {
+          profile = { name: 'DemoUser', city: 'L\'Estartit', lang: 'ES', contact: '@demo' };
+          have = [ { set:'SVI', code:'123/198', name:'Charizard ex', qty:1, extra:'Near Mint', _id:uuid(), _k:itemKey({set:'SVI', code:'123/198', name:'Charizard ex'}) } ];
+          want = [ { set:'151', code:'201/197', name:'Mew ex (SAR)', qty:1, extra:'Idioma: ANY', _id:uuid(), _k:itemKey({set:'151', code:'201/197', name:'Mew ex (SAR)'}) } ];
+          persist('profile'); persist('have'); persist('want');
+        }
+        rerender();
+      } catch (e) {
+        console.error(e);
+        toast('Error al iniciar. Prueba a recargar sin modo incógnito.');
       }
-      rerender();
     })();
   </script>
 </body>
