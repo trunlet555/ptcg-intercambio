@@ -1,161 +1,258 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Intercambio de Cartas Pokémon — MVP v0.2</title>
-  <meta name="description" content="MVP para gestionar listas de cartas BUSCO/TENGO y simular matches para intercambio en físico." />
-  <style>
-    body { font-family: sans-serif; background:#0f172a; color:#e5e7eb; margin:0; }
-    header { background:#111827; padding:1rem; position:sticky; top:0; }
-    h1 { margin:0; font-size:1.3rem; }
-    .wrap { max-width:960px; margin:0 auto; padding:1rem; }
-    .grid { display:grid; gap:1rem; grid-template-columns:1fr; }
-    @media(min-width:900px){ .grid{ grid-template-columns:1fr 1fr; } .span-2{grid-column:span 2;} }
-    .card { background:#1f2937; border-radius:12px; padding:1rem; }
-    .card h2 { margin-top:0; }
-    label { font-size:.85rem; color:#94a3b8; display:block; margin-bottom:.2rem; }
-    input,select,textarea,button {
-      width:100%; padding:.6rem; border-radius:8px; border:1px solid #334155; background:#0b1220; color:#e5e7eb;
-    }
-    button { cursor:pointer; font-weight:600; }
-    .btn.primary { background:#22c55e; color:#06210f; }
-    .btn.ghost { background:transparent; border:1px solid #334155; }
-    .btn.danger { background:#ef4444; color:#fff; }
-    .list { display:grid; gap:.5rem; margin-top:.5rem; }
-    .item { display:flex; justify-content:space-between; border:1px dashed #334155; border-radius:8px; padding:.5rem; }
-    .pill { background:#0ea5e922; border:1px solid #0ea5e955; border-radius:999px; padding:0 .5rem; font-size:.75rem; }
-    .empty { color:#94a3b8; text-align:center; padding:1rem; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intercambio de Cartas TCG | Intercambio Local</title>
+  <meta name="description" content="Encuentra personas cerca para intercambiar tus cartas Pokémon TCG, Yu-Gi-Oh!, Magic y otros juegos." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="wrap"><h1>Intercambio de Cartas Pokémon — MVP v0.2</h1></header>
-<main class="wrap">
-  <section class="grid">
-    <!-- Perfil -->
-    <article class="card">
-      <h2>Perfil</h2>
-      <label>Nombre <input id="name"></label>
-      <label>Ciudad <input id="city"></label>
-      <label>Idioma <select id="lang"><option>ES</option><option>EN</option><option>DE</option></select></label>
-      <label>Contacto <input id="contact"></label>
-      <button class="btn primary" id="saveProfile">Guardar</button>
-      <button class="btn ghost" id="clearProfile">Vaciar</button>
-    </article>
+  <header class="topbar">
+    <div class="container topbar__content">
+      <div class="logo">TCG<span>Swap</span></div>
+      <nav class="nav">
+        <a href="#listado">Cartas</a>
+        <a href="#perfiles">Perfiles</a>
+        <a href="#match">Matches</a>
+        <a href="#mapa">Mapa</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <button class="btn btn--ghost" aria-label="Cambiar tema" id="themeToggle">🌙</button>
+    </div>
+  </header>
 
-    <!-- Añadir TENGO -->
-    <article class="card">
-      <h2>Añadir a TENGO</h2>
-      <label>Set <input id="haveSet"></label>
-      <label>Código <input id="haveCode"></label>
-      <label>Nombre <input id="haveName"></label>
-      <label>Cantidad <input id="haveQty" type="number" value="1" min="1"></label>
-      <label>Estado <select id="haveCond"><option>Near Mint</option><option>Slightly Played</option></select></label>
-      <label>Rareza <input id="haveRarity"></label>
-      <label>Impresión <input id="havePrint"></label>
-      <label>Nota <input id="haveNote"></label>
-      <button class="btn primary" id="addHave">Añadir</button>
-    </article>
+  <main>
+    <section class="hero" id="inicio">
+      <div class="container hero__grid">
+        <div class="hero__text">
+          <p class="badge">Intercambio local · Sin comisiones</p>
+          <h1>Intercambia tus cartas Pokémon TCG cerca de ti</h1>
+          <p class="subtitle">Conecta con jugadores y coleccionistas, encuentra las cartas que buscas y queda en persona para intercambiar, comprar o vender.</p>
+          <div class="hero__actions">
+            <button class="btn" id="ctaExplorar">Explorar intercambios cerca de mí</button>
+            <button class="btn btn--ghost" id="ctaCrear">Crear mi perfil</button>
+          </div>
+          <div class="search-bar">
+            <input type="text" id="busquedaRapida" placeholder="Buscar por nombre de carta, juego, ciudad o usuario" aria-label="Búsqueda rápida">
+            <button class="btn" id="busquedaBtn">Buscar</button>
+          </div>
+          <div class="steps">
+            <article class="step-card">
+              <span class="step-number">1</span>
+              <div>
+                <h3>Crea tu perfil</h3>
+                <p>Indica tu ciudad, qué tipo de jugador eres y añade tus cartas.</p>
+              </div>
+            </article>
+            <article class="step-card">
+              <span class="step-number">2</span>
+              <div>
+                <h3>Marca tus deseos</h3>
+                <p>Separa tu lista en TENGO y BUSCO para que coincidan rápido.</p>
+              </div>
+            </article>
+            <article class="step-card">
+              <span class="step-number">3</span>
+              <div>
+                <h3>Queda en persona</h3>
+                <p>Contacta con gente cerca y acordad un punto seguro para el intercambio.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+        <div class="hero__cards" aria-label="Cartas destacadas">
+          <div class="glass card-preview">
+            <img src="https://images.unsplash.com/photo-1591054332837-1be32e60c1dc?auto=format&fit=crop&w=400&q=80" alt="Carta Pokémon" loading="lazy">
+            <div>
+              <p class="pill pill--blue">Pokémon</p>
+              <h3>Charizard V (SWSH260)</h3>
+              <p class="muted">Near Mint · Español · Intercambio/Venta</p>
+            </div>
+          </div>
+          <div class="glass card-preview">
+            <img src="https://images.unsplash.com/photo-1613478881181-59337f2186d6?auto=format&fit=crop&w=400&q=80" alt="Cartas TCG" loading="lazy">
+            <div>
+              <p class="pill pill--purple">Yu-Gi-Oh!</p>
+              <h3>Blue-Eyes White Dragon</h3>
+              <p class="muted">Played · Inglés · Intercambio</p>
+            </div>
+          </div>
+          <div class="hero__highlights">
+            <div class="highlight">
+              <span>📍</span>
+              <div>
+                <h4>Intercambio local</h4>
+                <p>Encuentra gente en tu barrio o ciudad.</p>
+              </div>
+            </div>
+            <div class="highlight">
+              <span>🎴</span>
+              <div>
+                <h4>Para jugadores y coleccionistas</h4>
+                <p>Listas separadas de TENGO y BUSCO.</p>
+              </div>
+            </div>
+            <div class="highlight">
+              <span>🛡️</span>
+              <div>
+                <h4>Seguro y sin comisiones</h4>
+                <p>Solo facilitamos el contacto, el trato es en persona.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <!-- Lista TENGO -->
-    <article class="card">
-      <h2>Mi lista TENGO</h2>
-      <input id="searchHave" placeholder="Filtrar...">
-      <button class="btn ghost" id="clearHave">Vaciar</button>
-      <div id="listHave" class="list"></div>
-      <div id="emptyHave" class="empty">Sin cartas.</div>
-    </article>
+    <section class="section" id="listado">
+      <div class="container section__header">
+        <div>
+          <p class="badge">Catálogo cercano</p>
+          <h2>Explora cartas disponibles</h2>
+          <p class="muted">Filtra por juego, idioma, estado o tipo de transacción para encontrar el intercambio perfecto.</p>
+        </div>
+        <div class="filters">
+          <select id="filtroJuego">
+            <option value="">Juego</option>
+            <option>Pokémon</option>
+            <option>Magic</option>
+            <option>Yu-Gi-Oh!</option>
+            <option>One Piece</option>
+          </select>
+          <select id="filtroTipo">
+            <option value="">Tipo</option>
+            <option>Intercambio</option>
+            <option>Venta</option>
+            <option>Intercambio/Venta</option>
+          </select>
+          <select id="filtroIdioma">
+            <option value="">Idioma</option>
+            <option>Español</option>
+            <option>Inglés</option>
+            <option>Japonés</option>
+          </select>
+          <select id="filtroEstado">
+            <option value="">Estado</option>
+            <option>Near Mint</option>
+            <option>Good</option>
+            <option>Played</option>
+          </select>
+          <select id="filtroRadio">
+            <option value="">Distancia</option>
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="20">20 km</option>
+            <option value="100">Todo el país</option>
+          </select>
+        </div>
+      </div>
+      <div class="container cards-grid" id="cardsGrid" aria-live="polite"></div>
+    </section>
 
-    <!-- Añadir BUSCO -->
-    <article class="card">
-      <h2>Añadir a BUSCO</h2>
-      <label>Set <input id="wantSet"></label>
-      <label>Código <input id="wantCode"></label>
-      <label>Nombre <input id="wantName"></label>
-      <label>Cantidad <input id="wantQty" type="number" value="1" min="1"></label>
-      <label>Idioma <select id="wantLang"><option>ANY</option><option>ES</option><option>EN</option></select></label>
-      <label>Rareza <input id="wantRarity"></label>
-      <label>Impresión <input id="wantPrint"></label>
-      <label>Nota <input id="wantNote"></label>
-      <button class="btn primary" id="addWant">Añadir</button>
-    </article>
+    <section class="section section--muted" id="perfiles">
+      <div class="container section__header">
+        <div>
+          <p class="badge">Usuarios destacados</p>
+          <h2>Perfiles cercanos</h2>
+          <p class="muted">Mira qué buscan y qué ofrecen antes de proponer un intercambio.</p>
+        </div>
+      </div>
+      <div class="container profile-grid" id="profileGrid"></div>
+    </section>
 
-    <!-- Lista BUSCO -->
-    <article class="card">
-      <h2>Mi lista BUSCO</h2>
-      <input id="searchWant" placeholder="Filtrar...">
-      <button class="btn ghost" id="clearWant">Vaciar</button>
-      <div id="listWant" class="list"></div>
-      <div id="emptyWant" class="empty">Sin cartas.</div>
-    </article>
+    <section class="section" id="match">
+      <div class="container section__header">
+        <div>
+          <p class="badge">Match rápido</p>
+          <h2>Simulación de coincidencias</h2>
+          <p class="muted">Cómo funcionarían los cruces entre tus cartas y las de otros usuarios.</p>
+        </div>
+      </div>
+      <div class="container match-grid" id="matchGrid"></div>
+    </section>
 
-    <!-- Exportar/Importar -->
-    <article class="card span-2">
-      <h2>Compartir</h2>
-      <button class="btn primary" id="exportAll">Descargar JSON</button>
-      <button class="btn ghost" id="copyAll">Copiar JSON</button>
-      <input type="file" id="importFile" accept="application/json" hidden>
-      <button class="btn ghost" id="importBtn">Importar JSON</button>
-      <textarea id="otherJson" placeholder="Pega JSON de otra persona"></textarea>
-      <button class="btn primary" id="runMatch">Calcular match</button>
-      <div id="matchResults" class="list"></div>
-      <div id="emptyMatch" class="empty">Sin resultados.</div>
-    </article>
-  </section>
-</main>
+    <section class="section section--muted" id="mapa">
+      <div class="container section__header">
+        <div>
+          <p class="badge">Mapa cercano</p>
+          <h2>Usuarios cerca de ti</h2>
+          <p class="muted">Chinchetas simuladas para visualizar intercambios locales. Reúnete en lugares públicos y seguros.</p>
+        </div>
+      </div>
+      <div class="container map">
+        <div class="map__placeholder" role="img" aria-label="Mapa simulado con usuarios cercanos">
+          <div class="pin" style="top:30%;left:45%">
+            <span class="pin__label">@LuzTCG · 2 km</span>
+          </div>
+          <div class="pin" style="top:60%;left:25%">
+            <span class="pin__label">@Coleccionista78 · 5 km</span>
+          </div>
+          <div class="pin" style="top:50%;left:70%">
+            <span class="pin__label">@NeoTrainer · 8 km</span>
+          </div>
+        </div>
+        <div class="map__tips">
+          <h3>Consejos de seguridad</h3>
+          <ul>
+            <li>Queda siempre en lugares públicos y con buena iluminación.</li>
+            <li>Revisa las cartas con calma antes de confirmar el intercambio.</li>
+            <li>No entregues dinero en efectivo sin revisar el estado.</li>
+            <li>Cuéntale a alguien dónde y con quién vas a quedar.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
 
-<script>
-const $=s=>document.querySelector(s);
-function uuid(){return (crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2));}
+    <section class="section" id="faq">
+      <div class="container section__header">
+        <div>
+          <p class="badge">Preguntas frecuentes</p>
+          <h2>FAQ</h2>
+          <p class="muted">Resolvemos las dudas más comunes.</p>
+        </div>
+      </div>
+      <div class="container faq-grid">
+        <article class="faq-item">
+          <h3>¿Es solo para Pokémon TCG?</h3>
+          <p>No. Pokémon es el foco principal, pero puedes añadir Yu-Gi-Oh!, Magic, One Piece y cualquier TCG.</p>
+        </article>
+        <article class="faq-item">
+          <h3>¿Se puede usar para otros TCG?</h3>
+          <p>Sí, los filtros y categorías permiten seleccionar distintos juegos.</p>
+        </article>
+        <article class="faq-item">
+          <h3>¿La plataforma gestiona pagos?</h3>
+          <p>No gestionamos pagos ni cobramos comisiones. Solo conectamos personas para que queden en persona.</p>
+        </article>
+        <article class="faq-item">
+          <h3>¿Cómo se coordinan los intercambios?</h3>
+          <p>Envía un mensaje al perfil, acordad cartas y lugar. La app propone matches para acelerar la conversación.</p>
+        </article>
+      </div>
+    </section>
+  </main>
 
-const els={
-  name:$('#name'), city:$('#city'), lang:$('#lang'), contact:$('#contact'),
-  saveProfile:$('#saveProfile'), clearProfile:$('#clearProfile'),
-  haveSet:$('#haveSet'), haveCode:$('#haveCode'), haveName:$('#haveName'), haveQty:$('#haveQty'), haveCond:$('#haveCond'), haveRarity:$('#haveRarity'), havePrint:$('#havePrint'), haveNote:$('#haveNote'), addHave:$('#addHave'),
-  wantSet:$('#wantSet'), wantCode:$('#wantCode'), wantName:$('#wantName'), wantQty:$('#wantQty'), wantLang:$('#wantLang'), wantRarity:$('#wantRarity'), wantPrint:$('#wantPrint'), wantNote:$('#wantNote'), addWant:$('#addWant'),
-  listHave:$('#listHave'), listWant:$('#listWant'), emptyHave:$('#emptyHave'), emptyWant:$('#emptyWant'),
-  searchHave:$('#searchHave'), searchWant:$('#searchWant'), clearHave:$('#clearHave'), clearWant:$('#clearWant'),
-  exportAll:$('#exportAll'), copyAll:$('#copyAll'), importBtn:$('#importBtn'), importFile:$('#importFile'),
-  otherJson:$('#otherJson'), runMatch:$('#runMatch'),
-  matchResults:$('#matchResults'), emptyMatch:$('#emptyMatch')
-};
+  <footer class="footer">
+    <div class="container footer__content">
+      <div>
+        <div class="logo">TCG<span>Swap</span></div>
+        <p class="muted">Conecta con jugadores y coleccionistas cerca de ti. Intercambia, compra o vende de forma local y segura.</p>
+      </div>
+      <div class="footer__links">
+        <a href="#inicio">Inicio</a>
+        <a href="#listado">Cartas</a>
+        <a href="#perfiles">Perfiles</a>
+        <a href="#match">Matches</a>
+        <a href="#mapa">Mapa</a>
+      </div>
+      <button class="btn btn--ghost" id="footerCTA">Crear perfil</button>
+    </div>
+  </footer>
 
-const KEY={profile:'ptcgProfile',have:'ptcgHave',want:'ptcgWant'};
-const read=(k,f)=>{try{return JSON.parse(localStorage.getItem(k))||f;}catch{return f;}};
-const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-
-let profile=read(KEY.profile,{name:'',city:'',lang:'ES',contact:''});
-let have=read(KEY.have,[]); let want=read(KEY.want,[]);
-
-function persist(t){if(t==='profile')write(KEY.profile,profile);if(t==='have')write(KEY.have,have);if(t==='want')write(KEY.want,want);}
-function itemKey(x){return `${x.set||''}:${x.code||''}:${x.name||''}:${x.rarity||''}:${x.printType||''}`;}
-function rerender(){els.name.value=profile.name; els.city.value=profile.city; els.lang.value=profile.lang; els.contact.value=profile.contact;
-  renderList(els.listHave,els.emptyHave,have,els.searchHave.value,'have');
-  renderList(els.listWant,els.emptyWant,want,els.searchWant.value,'want');}
-function renderList(el,empty,arr,q,t){el.innerHTML='';q=q.toLowerCase();let f=arr.filter(x=>[x.set,x.code,x.name].some(v=>(v||'').toLowerCase().includes(q)));if(!f.length){empty.hidden=false;return;}empty.hidden=true;
-  f.forEach(x=>{let d=document.createElement('div');d.className='item';
-    d.innerHTML=`<div><strong>${x.name||'—'}</strong><br><small>${x.set} · <span class="pill">${x.code}</span> · ${x.qty}u ${x.cond||''} ${x.rarity||''} ${x.printType||''} ${x.note||''}</small></div>`;
-    let b=document.createElement('button');b.textContent='Eliminar';b.className='btn danger';b.onclick=()=>{arr.splice(arr.indexOf(x),1);persist(t);rerender();};
-    d.appendChild(b);el.appendChild(d);});}
-
-els.saveProfile.onclick=()=>{profile={name:els.name.value,city:els.city.value,lang:els.lang.value,contact:els.contact.value};persist('profile');};
-els.clearProfile.onclick=()=>{profile={name:'',city:'',lang:'ES',contact:''};persist('profile');rerender();};
-
-els.addHave.onclick=()=>{let o={set:els.haveSet.value,code:els.haveCode.value.toUpperCase(),name:els.haveName.value,qty:+els.haveQty.value,cond:els.haveCond.value,rarity:els.haveRarity.value,printType:els.havePrint.value,note:els.haveNote.value,_id:uuid(),_k:itemKey({set:els.haveSet.value,code:els.haveCode.value,name:els.haveName.value,rarity:els.haveRarity.value,printType:els.havePrint.value})};have.push(o);persist('have');rerender();};
-els.addWant.onclick=()=>{let o={set:els.wantSet.value,code:els.wantCode.value.toUpperCase(),name:els.wantName.value,qty:+els.wantQty.value,lang:els.wantLang.value,rarity:els.wantRarity.value,printType:els.wantPrint.value,note:els.wantNote.value,_id:uuid(),_k:itemKey({set:els.wantSet.value,code:els.wantCode.value,name:els.wantName.value,rarity:els.wantRarity.value,printType:els.wantPrint.value})};want.push(o);persist('want');rerender();};
-
-els.clearHave.onclick=()=>{have=[];persist('have');rerender();};
-els.clearWant.onclick=()=>{want=[];persist('want');rerender();};
-els.searchHave.oninput=()=>rerender(); els.searchWant.oninput=()=>rerender();
-
-els.exportAll.onclick=()=>{let d={profile,have,want};let blob=new Blob([JSON.stringify(d)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ptcg.json';a.click();};
-els.copyAll.onclick=()=>{let d={profile,have,want};navigator.clipboard.writeText(JSON.stringify(d,null,2));};
-els.importBtn.onclick=()=>els.importFile.click();
-els.importFile.onchange=async e=>{let f=e.target.files[0];if(!f)return;let j=JSON.parse(await f.text());if(j.profile)profile=j.profile;if(j.have)have=j.have;if(j.want)want=j.want;persist('profile');persist('have');persist('want');rerender();};
-
-els.runMatch.onclick=()=>{let other=JSON.parse(els.otherJson.value||'{}');let iGive=have.filter(h=>other.want?.some(w=>w._k===h._k));let iReceive=want.filter(w=>other.have?.some(h=>h._k===w._k));els.matchResults.innerHTML=`<div>Yo doy: ${iGive.length} · Recibo: ${iReceive.length}</div>`;};
-
-rerender();
-</script>
+  <script src="script.js"></script>
 </body>
 </html>
